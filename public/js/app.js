@@ -19333,58 +19333,13 @@ module.exports = function(module) {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _task__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./task */ "./resources/js/task.js");
-
-
 __webpack_require__(/*! ./bootstrap */ "./resources/js/bootstrap.js");
 
 
 
-function taskCreateSegment() {
-  return "<div class='ui fluid segment task'>" + "<h2>Create Task</h2>" + "<div class='ui form'>" + "<div class='field'>" + "<label>Title</label>" + "<input class='create_task_title' type='text' name='title' placeholder='title'>" + "</div>" + "<div class='field'>" + "<label>Content</label>" + "<textarea class='create_task_content' rows='2' name='content' placeholder='content'></textarea>" + "</div>" + "<div class='ui teal button create_task_button'>Create</div>" + "</div>" + "</div>";
-}
-
-function taskEditSegment(id, title, content) {
-  return "<div class='ui segment task' data-taskid='" + id + "'>" + "<div class='ui form'>" + "<div class='field'>" + "<lable>Title</lable>" + "<input class='task_title' type='text' name='title' data-origin='" + title + "' value='" + title + "'>" + "</div>" + "<div class='field'>" + "<lable>Content</lable>" + "<textarea class='task_content' rows='2' name='content' data-origin='" + content + "'>" + content + "</textarea>" + "</div>" + "<div class='ui buttons'>" + "<div class='ui teal button update_task_button'>Save</div>" + "<div class='ui grey button cancel_task_button'>Cancel</div>" + "</div>" + "</div>" + "</div>";
-}
 
 function taskViewSegment(id, title, content) {
   return "<div class='ui segment task' data-taskid='" + id + "'>" + "<h2 class='task_title'>" + title + "</h2>" + "<p class='task_content'>" + content + "</p>" + "<div class='ui buttons'>" + "<div class='ui teal button edit_task_button'>Edit</div>" + "<div class='ui pink button delete_task_button'>Delete</div>" + "</div>" + "</div>";
-}
-
-function registerViewTaskButton() {
-  $(".edit_task_button").click(function () {
-    console.log('edit_task_button on click.');
-    var taskEle = $(this).closest('.task');
-    editTask(taskEle);
-  });
-  $(".delete_task_button").click(function () {
-    console.log('delete_task_button on click.');
-    var taskEle = $(this).closest('.task');
-    deleteTask(taskEle);
-  });
-}
-
-function registerEditTaskButton() {
-  $('.update_task_button').click(function () {
-    var taskEle = $(this).closest('.task');
-    updateTask(taskEle);
-  });
-  $('.cancel_task_button').click(function () {
-    var taskEle = $(this).closest('.task');
-    cancelEdit(taskEle);
-  });
-}
-
-function registerCreateTaskButton() {
-  $(".create_task_button").click(function () {
-    console.log('create_task_button on click.');
-    createTask();
-  });
-}
-
-function loadCreateTask() {
-  $('#create_task_container').empty().append(taskCreateSegment());
-  registerCreateTaskButton();
 }
 
 function loadTasks() {
@@ -19396,65 +19351,121 @@ function loadTasks() {
         $('#task_container').prepend(taskViewSegment(tasksJson[_i].id, tasksJson[_i].title, tasksJson[_i].content));
       }
 
-      registerViewTaskButton();
+      initViewTaskButton();
     } else {
       $('#task_container').prepend("<div class='ui red segment' data-taskid='" + tasksJson[i].id + "'>" + "<p>error</p>" + "</div>");
     }
   });
 }
 
-function createTask() {
-  var title = $('.create_task_title');
-  var content = $('.create_task_content');
-  Object(_task__WEBPACK_IMPORTED_MODULE_0__["taskStore"])(title.val(), content.val()).then(function (taskJson) {
-    console.log(taskJson);
-    $('#task_container').prepend(taskViewSegment(taskJson.id, taskJson.title, taskJson.content));
-    registerViewTaskButton();
+function reloadTask(id, title, content) {
+  var task = $('.segment.task[data-taskid="' + id + '"]');
+  task.find('.task_title').text(title);
+  task.find('.task_content').text(content);
+}
+/*
+* 預覽任務
+* */
+
+
+function initViewTaskButton() {
+  $(".edit_task_button").click(function () {
+    console.log('edit task.');
+    var taskEle = $(this).closest('.task');
+    var id = taskEle.data('taskid');
+    var title = taskEle.find('.task_title').text();
+    var content = taskEle.find('.task_content').text();
+    showEditTaskModal(id, title, content);
   });
-  title.val('');
-  content.val('');
-}
-
-function updateTask(taskEle) {
-  var id = taskEle.data('taskid');
-  var title = taskEle.find('.task_title').val();
-  var content = taskEle.find('.task_content').val();
-  Object(_task__WEBPACK_IMPORTED_MODULE_0__["taskUpdate"])(id, title, content).then(function (taskJson) {
-    taskEle.replaceWith(taskViewSegment(taskJson.id, taskJson.title, taskJson.content));
-    registerViewTaskButton();
+  $(".delete_task_button").click(function () {
+    console.log('delete task.');
+    var taskEle = $(this).closest('.task');
+    var id = taskEle.data('taskid');
+    var title = taskEle.find('.task_title').text();
+    showDeleteTaskModal(id, title);
   });
-  alert('Task updated successfully.');
 }
+/*
+* 新增任務
+* */
 
-function editTask(taskEle) {
-  var id = taskEle.data('taskid');
-  var title = taskEle.find('.task_title').text();
-  var content = taskEle.find('.task_content').text();
-  console.log(id);
-  console.log(title);
-  console.log(content);
-  taskEle.replaceWith(taskEditSegment(id, title, content));
-  registerEditTaskButton();
-}
 
-function cancelEdit(taskEle) {
-  var id = taskEle.data('taskid');
-  var title = taskEle.find('.task_title').data('origin');
-  var content = taskEle.find('.task_content').data('origin');
-  taskEle.replaceWith(taskViewSegment(id, title, content));
-  registerViewTaskButton();
-}
-
-function deleteTask(taskEle) {
-  var id = taskEle.data('taskid');
-  Object(_task__WEBPACK_IMPORTED_MODULE_0__["taskDelete"])(id).then(function (data) {
-    taskEle.remove();
-    alert('Task deleted successfully.');
+function initCreateTaskModal() {
+  $('#create_task_button').click(function () {
+    console.log('create task.');
+    showCreateTaskModal();
   });
+  $('#create_modal_ok').click(function () {
+    var title = $('#create_modal_header').val();
+    var content = $('#create_modal_content').val();
+    Object(_task__WEBPACK_IMPORTED_MODULE_0__["taskStore"])(title, content).then(function (taskJson) {
+      $('#task_container').prepend(taskViewSegment(taskJson.id, taskJson.title, taskJson.content));
+      $('#create_modal').modal('hide');
+      $('#create_modal_header').val('');
+      $('#create_modal_content').val('');
+      initViewTaskButton();
+    });
+  });
+  $('#create_modal_cancel').click(function () {
+    $('#create_modal').modal('hide');
+  });
+}
+
+function showCreateTaskModal() {
+  $('#create_modal').modal('show');
+}
+/*
+* 更新任務
+* */
+
+
+function initEditTaskModal() {
+  $('#edit_modal_ok').click(function () {
+    var id = $('#edit_modal').data('taskid');
+    var title = $('#edit_modal_header').val();
+    var content = $('#edit_modal_content').val();
+    Object(_task__WEBPACK_IMPORTED_MODULE_0__["taskUpdate"])(id, title, content).then(function (taskJson) {
+      $('#edit_modal').modal('hide');
+      reloadTask(id, title, content);
+    });
+  });
+  $('#edit_modal_cancel').click(function () {
+    $('#edit_modal').modal('hide');
+  });
+}
+
+function showEditTaskModal(id, title, content) {
+  $('#edit_modal').data('taskid', id).modal('show');
+  $('#edit_modal_header').val(title);
+  $('#edit_modal_content').val(content);
+}
+/*
+* 刪除任務
+* */
+
+
+function initDeleteTaskModal() {
+  $('#delete_modal_ok').click(function () {
+    var id = $('#delete_modal').data('taskid');
+    Object(_task__WEBPACK_IMPORTED_MODULE_0__["taskDelete"])(id).then(function (taskJson) {
+      $('#delete_modal').modal('hide');
+      $('.task[data-taskid="' + id + '"]').remove();
+    });
+  });
+  $('#delete_modal_cancel').click(function () {
+    $('#delete_modal').modal('hide');
+  });
+}
+
+function showDeleteTaskModal(id, title) {
+  $('#delete_modal').data('taskid', id).modal('show');
+  $('#delete_modal_content').text('確定要刪除任務：「' + title + '」嗎？');
 }
 
 $(document).ready(function () {
-  loadCreateTask();
+  initCreateTaskModal();
+  initEditTaskModal();
+  initDeleteTaskModal();
   loadTasks();
 });
 
